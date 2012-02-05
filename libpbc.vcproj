@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../logger/lib"
+				AdditionalIncludeDirectories=".;../logger/lib"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -115,7 +115,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="../logger/lib"
+				AdditionalIncludeDirectories=".;../logger/lib"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -207,6 +207,14 @@
 					RelativePath=".\pbc\buffer.h"
 					>
 				</File>
+				<File
+					RelativePath=".\pbc\orca_session.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pbc\orca_session.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="logger"
@@ -221,6 +229,18 @@
 				</File>
 				<File
 					RelativePath="..\logger\lib\stdafx.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="util"
+				>
+				<File
+					RelativePath=".\util\dll.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\util\dll.h"
 					>
 				</File>
 			</Filter>

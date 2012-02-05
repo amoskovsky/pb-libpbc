@@ -9,6 +9,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "pbc/buffer.h"
+#include "pbc/orca_session.h"
+#include "util/dll.h"
 #include <logger.h>
 
 #include <string>
@@ -17,6 +19,12 @@
 
 using namespace std;
 
+BOOST_AUTO_TEST_CASE(setup_app)
+{
+    logger::setup("debug/error.log", true, 5);
+    logger::truncate();
+}
+///////////////////////////////////////
 
 string hexdump(const wstring& s) 
 {
@@ -41,14 +49,6 @@ string hexdump(const string& s)
     }
     return os.str();
 }
-
-
-BOOST_AUTO_TEST_CASE(setup_app)
-{
-    logger::setup("debug/error.log", true, 5);
-    logger::truncate();
-}
-///////////////////////////////////////
 
 BOOST_AUTO_TEST_CASE(test_use_count)
 {
@@ -96,6 +96,32 @@ BOOST_AUTO_TEST_CASE(test_utf16_ansi)
     //trace_log << hexdump(b1.wide_buf()) << endl;
     BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
 }
+
+BOOST_AUTO_TEST_CASE(test_lexical_cast)
+{
+    wstring s1 = L"testПроба";
+    string s2 = logger::string_cast<string>(s1);
+    BOOST_CHECK(s2 == "testПроба");
+    trace_log << "s1:'" << s1 << "'" << endl;
+    trace_log << "s2:'" << s2 << "'" << endl;
+}
+
+bool test_dll_load_failed_pred(const std::runtime_error& e)
+{
+    return string(e.what()).find("failed") != string::npos;
+}
+
+BOOST_AUTO_TEST_CASE(test_dll_load_failed)
+{
+    dll d;
+    BOOST_REQUIRE_EXCEPTION(d.load(L"test1.dll"), std::runtime_error, test_dll_load_failed_pred);
+}
+
+BOOST_AUTO_TEST_CASE(test_orca_load)
+{
+    pbc::orca_session orca(L"pborc90.dll", 90, false);
+}
+
 
 //////////////////////////////////////
 BOOST_AUTO_TEST_CASE(shutdown_app)
