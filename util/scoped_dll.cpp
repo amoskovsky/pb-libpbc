@@ -1,5 +1,5 @@
 #include "StdAfx.h"
-#include "dll.h"
+#include "scoped_dll.h"
 #include <pbc/buffer.h>
 #include <logger.h>
 
@@ -10,19 +10,19 @@
 
 using namespace std;
 
-dll::dll()
+scoped_dll::scoped_dll()
 : m_handle(0)
 {
 }
 
-dll::~dll()
+scoped_dll::~scoped_dll()
 {
 	if (m_handle) {
 		FreeLibrary(m_handle);
 	}
 }
 
-void dll::load(const wstring& path, DWORD flags)
+void scoped_dll::load(const wstring& path, DWORD flags)
 {
 	m_handle = LoadLibraryExW(path.c_str(), NULL, flags);
 	if (!m_handle) {

@@ -5,11 +5,11 @@
 #include <string>
 
 
-class dll
+class scoped_dll
 {
 public:
-	dll();
-	~dll();
+	scoped_dll();
+	~scoped_dll();
     void load(const std::wstring& path, DWORD flags = LOAD_WITH_ALTERED_SEARCH_PATH);
 	operator HMODULE() const { return m_handle; }
 private:

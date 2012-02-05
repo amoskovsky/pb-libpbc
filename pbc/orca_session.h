@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pbc/buffer.h>
-#include <util/dll.h>
+#include <util/scoped_dll.h>
 
 #include <string>
 #include <stdexcept>
@@ -9,6 +9,7 @@
 #include <windows.h>
 #include "pborca.h"
 
+#include <vector>
 #include <boost/shared_ptr.hpp>
 
 namespace pbc {
@@ -37,6 +38,8 @@ public:
     typedef pbc::buffer orca_string;
     orca_session(const wstring& pbrt_dll, int pb_ver, bool unicode);
     ~orca_session();
+    void set_current_app(orca_string app, orca_string lib);
+    void set_library_list(const std::vector<orca_string>& lib_list);
 private:
     orca_session(); // no implementation
     void session_open();
@@ -45,7 +48,7 @@ private:
     WALK_ORCA_METHODS(DECLARE_ORCA_METHOD);
     void init_orca_method(const std::string& method_name, void ** method_addr);
 private:
-    dll m_dll;
+    scoped_dll m_dll;
     buffer_type m_encoding;
     HPBORCA m_session;
 };

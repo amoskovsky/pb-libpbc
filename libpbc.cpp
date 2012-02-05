@@ -8,9 +8,9 @@
 #define BOOST_TEST_MAIN LibPbCompilerTest
 #include <boost/test/unit_test.hpp>
 
-#include "pbc/buffer.h"
-#include "pbc/orca_session.h"
-#include "util/dll.h"
+#include <pbc/buffer.h>
+#include <pbc/orca_session.h>
+#include <util/scoped_dll.h>
 #include <logger.h>
 
 #include <string>
@@ -113,7 +113,7 @@ bool test_dll_load_failed_pred(const std::runtime_error& e)
 
 BOOST_AUTO_TEST_CASE(test_dll_load_failed)
 {
-    dll d;
+    scoped_dll d;
     BOOST_REQUIRE_EXCEPTION(d.load(L"test1.dll"), std::runtime_error, test_dll_load_failed_pred);
 }
 
