@@ -6,14 +6,15 @@
 
 namespace pbc {
 
+enum buffer_type {
+    BT_BINARY,
+    BT_ANSI,
+    BT_ANSI16,
+    BT_UTF16
+};
+
 class buffer {
 public:
-    enum buffer_type {
-        BT_BINARY,
-        BT_ANSI,
-        BT_ANSI16,
-        BT_UTF16
-    };
     buffer();
     buffer(buffer_type type, size_t size);
     buffer(const std::string& ansi_str);
@@ -24,6 +25,7 @@ public:
 
     char* make_writable(buffer_type type, size_t size);
     const char* make_ansi();
+    const wchar_t* make_utf16();
     operator bool () const { return m_data; }
     char* buf() const { return m_data ? &m_data->buf[0] : 0; }
     size_t size() const { return m_data ? m_data->size : 0;}
@@ -43,6 +45,8 @@ private:
     data_ptr copy_ansi16_to_ansi(data_ptr src);
     void copy_ansi16_to_ansi(char* dest, wchar_t* src, size_t size);
     void copy_ansi_to_ansi16(wchar_t* dest, char* src, size_t size);
+    data_ptr copy_utf16_to_ansi(data_ptr src);
+    data_ptr copy_ansi_to_utf16(data_ptr src);
 private:
     data_ptr m_data;
 };

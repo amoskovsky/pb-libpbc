@@ -5,6 +5,8 @@
 
 #include <cstdlib>
 
+#include <windows.h>
+
 namespace pbc {
 
 using namespace std;
@@ -99,7 +101,9 @@ const char* buffer::make_ansi()
         trace_log << "from BT_ANSI16" << endl;
         m_data = copy_ansi16_to_ansi(m_data);
         break;
-    case BT_UTF16: 
+    case BT_UTF16:
+        trace_log << "from BT_UTF16" << endl;
+        m_data = copy_utf16_to_ansi(m_data);
         break;
     }
     return buf();
@@ -108,6 +112,7 @@ const char* buffer::make_ansi()
 buffer::data_ptr buffer::copy_ansi16_to_ansi( buffer::data_ptr src )
 {
     trace_log << "buffer::copy_ansi16_to_ansi" << endl;
+    assert_throw(src);
     assert_throw(src->type == BT_ANSI16);
     data_ptr dest(new data());
     dest->type = BT_ANSI;
@@ -131,5 +136,100 @@ void buffer::copy_ansi_to_ansi16( wchar_t* dest, char* src, size_t size )
         *dest = *src;
     }
 }
+
+buffer::data_ptr buffer::copy_utf16_to_ansi( data_ptr src )
+{
+    trace_log << "buffer::copy_utf16_to_ansi" << endl;
+    assert_throw(src);
+    assert_throw(src->type == BT_UTF16);
+    data_ptr dest(new data());
+    dest->type = BT_ANSI;
+    if (src->size > 0) {
+        dest->size = ::WideCharToMultiByte(
+            CP_ACP,
+            0, //WC_DEFAULTCHAR,
+            (LPCWSTR) &src->buf[0],
+            src->size, // not incl 0
+            NULL,
+            0, // return buf size in bytes
+            NULL, //"?", // def char
+            NULL // &lb_UsedDefChar
+            );
+        assert_throw(dest->size != 0);
+        size_t byte_size = dest->size + 2;
+        dest->buf.resize(byte_size, 0);
+        ::WideCharToMultiByte(
+            CP_ACP,
+            0, //WC_DEFAULTCHAR,
+            (LPCWSTR) &src->buf[0],
+            src->size, // not incl 0
+            (LPSTR)&dest->buf[0],
+            dest->size,
+            NULL, //"?", // def char
+            NULL  //&lb_UsedDefChar
+            );
+    }
+    return dest;    
+}
+
+buffer::data_ptr buffer::copy_ansi_to_utf16( data_ptr src )
+{
+    trace_log << "buffer::copy_ansi_to_utf16" << endl;
+    assert_throw(src);
+    assert_throw(src->type == BT_ANSI);
+    data_ptr dest(new data());
+    dest->type = BT_UTF16;
+    if (src->size > 0) {
+        dest->size = ::MultiByteToWideChar(
+            CP_ACP,
+            MB_PRECOMPOSED,
+            (LPCSTR) &src->buf[0],
+            src->size, // not incl 0
+            NULL,
+            0 // return buf size in wchar's
+            );
+        assert_throw(dest->size != 0);
+        size_t byte_size = dest->size * 2 + 2;
+        dest->buf.resize(byte_size, 0);
+        ::MultiByteToWideChar(
+            CP_ACP,
+            MB_PRECOMPOSED,
+            (LPCSTR) &src->buf[0],
+            src->size, // not incl 0
+            (LPWSTR)&dest->buf[0],
+            dest->size
+            );
+    }
+    return dest;
+}
+
+const wchar_t* buffer::make_utf16()
+{
+    trace_log << "buffer::make_utf16 m_data=" << m_data << endl;
+    if (!m_data)
+        return 0;
+    trace_log << "type=" << m_data->type << endl;
+    switch (m_data->type) {
+    case BT_BINARY:
+        assert_throw(m_data->size % 2 == 0);
+        make_writable();
+        m_data->type = BT_UTF16;
+        m_data->size /= 2;
+        break;
+    case BT_ANSI: 
+        trace_log << "from BT_ANSI" << endl;
+        m_data = copy_ansi_to_utf16(m_data);
+        break;
+    case BT_ANSI16: 
+        trace_log << "from BT_ANSI16" << endl;
+        m_data = copy_ansi16_to_ansi(m_data);
+        m_data = copy_ansi_to_utf16(m_data);
+        break;
+    case BT_UTF16:
+        break;
+    }
+    return wide_buf();
+}
+
 
 } // namespace pbc
