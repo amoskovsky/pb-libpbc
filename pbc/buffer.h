@@ -6,6 +6,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
+#ifdef UNICODE
+typedef std::wstring tstring;
+#else
+typedef std::string tstring;
+#endif
+
 namespace pbc {
 
 enum buffer_type {
@@ -25,17 +31,19 @@ public:
     buffer(buffer_type type, const wchar_t* src, size_t size);
     // intentionally no copy ctor and assignment operator 
 
-    char* make_writable(buffer_type type, size_t size);
-    const char* make_ansi();
-    const wchar_t* make_utf16();
+    TCHAR* make_writable(buffer_type type, size_t size);
+    char* make_ansi();
+    wchar_t* make_utf16();
+    TCHAR* make(buffer_type type);
     operator bool () const { return m_data; }
-    char* buf() const { return m_data ? &m_data->buf[0] : 0; }
+    TCHAR* buf() const { return (TCHAR*)(m_data ? &m_data->buf[0] : 0); }
     size_t size() const { return m_data ? m_data->size : 0;}
     char* ansi_buf() const { return (char*)buf(); }
     wchar_t* wide_buf() const { return (wchar_t*)buf(); }
     buffer_type type() const { return m_data ? m_data->type : BT_BINARY; }
     size_t use_count() const { return m_data ? m_data.use_count() : 0; }
     void make_writable();
+    tstring to_tstring();
 private:
     struct data {
         buffer_type type;

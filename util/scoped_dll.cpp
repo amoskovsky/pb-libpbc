@@ -29,7 +29,7 @@ void scoped_dll::load(const wstring& path, DWORD flags)
         string msg = string("Loading DLL failed for '") 
             + logger::string_cast<string>(path) + "': " 
             + logger::get_last_error();
-        warn_log << msg << endl;
+        trace_log << msg << endl;
         throw std::runtime_error(msg);
 	}
 }

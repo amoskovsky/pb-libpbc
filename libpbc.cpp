@@ -17,11 +17,15 @@
 #include <sstream>
 #include <iomanip>
 
+#include <boost/filesystem/v3/operations.hpp>
+
 using namespace std;
+using pbc::orca_string;
+using boost::filesystem::absolute;
 
 BOOST_AUTO_TEST_CASE(setup_app)
 {
-    logger::setup("debug/error.log", true, 5);
+    logger::setup("debug/error.log", true, 4);
     logger::truncate();
 }
 ///////////////////////////////////////
@@ -50,6 +54,10 @@ string hexdump(const string& s)
     return os.str();
 }
 
+string abs_path(const string& p) 
+{
+    return absolute(p).make_preferred().string();
+}
 BOOST_AUTO_TEST_CASE(test_use_count)
 {
     pbc::buffer b1("test");
@@ -97,6 +105,18 @@ BOOST_AUTO_TEST_CASE(test_utf16_ansi)
     BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
 }
 
+BOOST_AUTO_TEST_CASE(test_to_tstring)
+{
+    pbc::buffer b;
+    BOOST_CHECK(b.to_tstring() == TEXT("<NULL>"));
+
+    b = pbc::buffer(L"testПроба");
+    BOOST_CHECK(b.to_tstring() == TEXT("testПроба"));
+    
+    b = pbc::buffer("testПроба");
+    BOOST_CHECK(b.to_tstring() == TEXT("testПроба"));
+}
+
 BOOST_AUTO_TEST_CASE(test_lexical_cast)
 {
     wstring s1 = L"testПроба";
@@ -114,12 +134,27 @@ bool test_dll_load_failed_pred(const std::runtime_error& e)
 BOOST_AUTO_TEST_CASE(test_dll_load_failed)
 {
     scoped_dll d;
-    BOOST_REQUIRE_EXCEPTION(d.load(L"test1.dll"), std::runtime_error, test_dll_load_failed_pred);
+    BOOST_REQUIRE_EXCEPTION(
+        d.load(L"nonexistent.dll"), 
+        std::runtime_error, 
+        test_dll_load_failed_pred
+        );
 }
 
 BOOST_AUTO_TEST_CASE(test_orca_load)
 {
-    pbc::orca_session orca(L"pborc90.dll", 90, false);
+    pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
+}
+
+BOOST_AUTO_TEST_CASE(test_orca_init_app)
+{
+    pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
+    vector<orca_string> libs;
+    libs.push_back(orca_string(abs_path("testapp/pb9/main.pbl")));
+    libs.push_back(orca_string(abs_path("testapp/pb9/menus.pbl")));
+    libs.push_back(orca_string(abs_path("testapp/pb9/windows.pbl")));
+    orca->set_library_list(libs);
+    orca->set_current_app(orca_string("app"), libs[0]);
 }
 
 

@@ -31,15 +31,17 @@ namespace pbc {
 
 using namespace std;
 
+typedef pbc::buffer orca_string;
+
 class orca_session
 {
 public:
     typedef boost::shared_ptr<orca_session> ptr;
-    typedef pbc::buffer orca_string;
     orca_session(const wstring& pbrt_dll, int pb_ver, bool unicode);
     ~orca_session();
     void set_current_app(orca_string app, orca_string lib);
-    void set_library_list(const std::vector<orca_string>& lib_list);
+    void set_library_list(std::vector<orca_string>& lib_list);
+    std::string get_error();
 private:
     orca_session(); // no implementation
     void session_open();

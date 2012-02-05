@@ -26,14 +26,14 @@ buffer::buffer( buffer_type type, size_t size )
 buffer::buffer( const string& ansi_str )
 {
     trace_log << "buffer::buffer ansi_str='" << ansi_str << "'" << endl;
-    char* buf = make_writable(BT_ANSI, ansi_str.size());
+    char* buf = (char*)make_writable(BT_ANSI, ansi_str.size());
     std::strncpy(buf, ansi_str.c_str(), ansi_str.size());
 }
 
 buffer::buffer( buffer_type type, const char* src, size_t size )
 {
     trace_log << "buffer::buffer type=" << type << " char buf=" << (void*)src << " size=" << size << endl;
-    char* buf = make_writable(type, size);
+    char* buf = (char*)make_writable(type, size);
     std::strncpy(buf, src, size);
 }
 
@@ -51,7 +51,7 @@ buffer::buffer( buffer_type type, const wchar_t* src, size_t size )
     std::wcsncpy(buf, src, size);
 }
 
-char* buffer::make_writable( buffer_type type, size_t size )
+TCHAR* buffer::make_writable( buffer_type type, size_t size )
 {
     trace_log << "buffer::make_writable type=" << type << " size=" << size << endl;
     if (!m_data || m_data.use_count() > 1)
@@ -84,7 +84,7 @@ void buffer::make_writable()
     }
 }
 
-const char* buffer::make_ansi()
+char* buffer::make_ansi()
 {
     trace_log << "buffer::make_ansi m_data=" << m_data << endl;
     if (!m_data)
@@ -106,7 +106,7 @@ const char* buffer::make_ansi()
         m_data = copy_utf16_to_ansi(m_data);
         break;
     }
-    return buf();
+    return ansi_buf();
 }
 
 buffer::data_ptr buffer::copy_ansi16_to_ansi( buffer::data_ptr src )
@@ -203,7 +203,7 @@ buffer::data_ptr buffer::copy_ansi_to_utf16( data_ptr src )
     return dest;
 }
 
-const wchar_t* buffer::make_utf16()
+wchar_t* buffer::make_utf16()
 {
     trace_log << "buffer::make_utf16 m_data=" << m_data << endl;
     if (!m_data)
@@ -229,6 +229,30 @@ const wchar_t* buffer::make_utf16()
         break;
     }
     return wide_buf();
+}
+
+TCHAR* buffer::make( buffer_type type )
+{
+    switch (type) {
+    case BT_ANSI: 
+        return (TCHAR*)make_ansi();
+    case BT_UTF16:
+        return (TCHAR*)make_utf16();
+    default:
+        throw runtime_error("buffer::make() acepts only BT_ANSI and BT_UTF16");
+    }
+}
+
+tstring buffer::to_tstring()
+{
+    if (!m_data)
+        return tstring(TEXT("<NULL>"));
+    buffer tmp = *this;
+#ifdef UNICODE
+    return tmp.make_utf16();
+#else
+    return tmp.make_ansi();
+#endif
 }
 
 
