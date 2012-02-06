@@ -148,7 +148,7 @@ void orca_session::compile_entry_regenerate( orca_string lib, orca_string entry,
     if (err != PBORCA_OK) {
         if (err == orca_compile_error::GPF_ERROR) {
             recover();
-            throw orca_compile_error(err, "memory access violation", m_compile_errors);
+            throw orca_compile_gpf(m_compile_errors);
         }
         else {
             throw orca_compile_error(err, get_error(), m_compile_errors);
@@ -163,6 +163,79 @@ void orca_session::recover()
     session_open();
     set_library_list(m_lib_list);
     set_current_app(m_app_lib, m_app);
+}
+
+void orca_session::library_entry_delete( orca_string lib, orca_string entry, PBORCA_TYPE entry_type, bool throw_on_not_found )
+{
+    debug_log << "orca_session::library_entry_delete" 
+        << " entry=" << entry.to_tstring() 
+        << " entry_type=" << to_string(entry_type) 
+        << " lib=" << lib.to_tstring() 
+        << endl;
+    int err = LibraryEntryDelete(
+        m_session, 
+        lib.make(m_encoding), 
+        entry.make(m_encoding),
+        entry_type
+        );
+    if (err != PBORCA_OK && (throw_on_not_found || err != PBORCA_OBJNOTFOUND))
+        throw orca_error(err, get_error());
+}
+
+int CompileEntryImportWrapper(
+                                  FP_CompileEntryImport fn,
+                                  HPBORCA        hORCASession,    
+                                  LPTSTR         lpszLibraryName,
+                                  LPTSTR         lpszEntryName,  
+                                  PBORCA_TYPE    otEntryType,     
+                                  LPTSTR         lpszComments,  
+                                  LPTSTR         lpszEntrySyntax,
+                                  LONG           lEntrySyntaxBuffSize, 
+                                  PBORCA_ERRPROC pCompErrProc,    
+                                  LPVOID         pUserData     
+                                  ) 
+{
+    int ret = 0;
+    __try {
+        ret = fn(hORCASession, lpszLibraryName, lpszEntryName, 
+            otEntryType, lpszComments, lpszEntrySyntax, lEntrySyntaxBuffSize,
+            pCompErrProc, pUserData);
+    } __except (1) {
+        ret = orca_compile_error::GPF_ERROR;
+    }
+    return ret;
+}
+
+void orca_session::compile_entry_import( orca_string lib, orca_string entry, PBORCA_TYPE entry_type, orca_string comments, orca_string syntax )
+{
+    debug_log << "orca_session::compile_entry_import" 
+        << " entry=" << entry.to_tstring() 
+        << " entry_type=" << to_string(entry_type) 
+        << " lib=" << lib.to_tstring() 
+        << endl;
+    m_compile_errors.clear();
+    syntax.make(m_encoding);
+    int err = CompileEntryImportWrapper(
+        CompileEntryImport, 
+        m_session, 
+        lib.make(m_encoding), 
+        entry.make(m_encoding),
+        entry_type,
+        comments.make(m_encoding),
+        syntax.buf(),
+        syntax.size(),
+        &orca_session::compile_error_callback,
+        this
+        );
+    if (err != PBORCA_OK) {
+        if (err == orca_compile_error::GPF_ERROR) {
+            recover();
+            throw orca_compile_gpf(m_compile_errors);
+        }
+        else {
+            throw orca_compile_error(err, get_error(), m_compile_errors);
+        }
+    }
 }
 
 orca_error::orca_error( int error_code, const std::string& message )

@@ -23,6 +23,7 @@ namespace pbc {
     code(CompileEntryRegenerate); \
     code(CompileEntryImport); \
     code(DynamicLibraryCreate); \
+    code(LibraryEntryDelete); \
     code(SessionGetError); \
     code(SetExeInfo); \
     code(ExecutableCreate); \
@@ -52,6 +53,8 @@ public:
     void set_library_list(std::vector<orca_string>& lib_list);
     std::string get_error();
     void compile_entry_regenerate(orca_string lib, orca_string entry, PBORCA_TYPE entry_type);
+    void library_entry_delete(orca_string lib, orca_string entry, PBORCA_TYPE entry_type, bool throw_on_not_found = true);
+    void compile_entry_import(orca_string lib, orca_string entry, PBORCA_TYPE entry_type, orca_string comments, orca_string syntax);
 private:
     orca_session(); // no implementation
     void session_open();
@@ -92,6 +95,12 @@ public:
     const list<orca_compile_error_item>& error_items() const { return m_error_items; }
 private:
     list<orca_compile_error_item> m_error_items;
+};
+
+class orca_compile_gpf: public orca_compile_error {
+public:
+    orca_compile_gpf(list<orca_compile_error_item>& error_items)
+        : orca_compile_error(GPF_ERROR, "Memory access violation", error_items) {}
 };
 
 string to_string(PBORCA_TYPE value);

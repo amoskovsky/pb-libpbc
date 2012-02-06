@@ -23,9 +23,17 @@ using namespace std;
 using pbc::orca_string;
 using boost::filesystem::absolute;
 
+#define PROBA "test\xCF\xF0\xEE\xE1\xE0"
+#define L_PROBA L"test\u041F\u0440\u043E\u0431\u0430"
+#ifdef UNICODE
+#define T_PROBA L_PROBA
+#else
+#define T_PROBA PROBA
+#endif
+
 BOOST_AUTO_TEST_CASE(setup_app)
 {
-    logger::setup("debug/error.log", true, 4);
+    logger::setup("debug/error.log", true, 3);
     logger::truncate();
 }
 ///////////////////////////////////////
@@ -90,30 +98,30 @@ BOOST_AUTO_TEST_CASE(test_ansi16_ansi)
 
 BOOST_AUTO_TEST_CASE(test_utf16_ansi)
 {
-    pbc::buffer b1 (L"testПроба");
+    pbc::buffer b1 (L_PROBA);
     BOOST_CHECK(b1.type() == pbc::BT_UTF16);
     BOOST_CHECK(b1.size() == 9);
     b1.make_ansi();
     BOOST_CHECK(b1.type() == pbc::BT_ANSI);
     BOOST_CHECK(b1.size() == 9);
     //trace_log << hexdump(b1.ansi_buf()) << endl;
-    BOOST_CHECK(string(b1.ansi_buf()) == "testПроба");
+    BOOST_CHECK(string(b1.ansi_buf()) == PROBA);
     b1.make_utf16();
     BOOST_CHECK(b1.type() == pbc::BT_UTF16);
     BOOST_CHECK(b1.size() == 9);
     //trace_log << hexdump(b1.wide_buf()) << endl;
-    BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
+    BOOST_CHECK(wstring(b1.wide_buf()) == L_PROBA);
 }
 
 BOOST_AUTO_TEST_CASE(test_from_fake_tchar)
 {
-    pbc::buffer b1(pbc::BT_UTF16, L"testПроба");
-    BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
-    BOOST_CHECK(b1.to_tstring() == TEXT("testПроба"));
+    pbc::buffer b1(pbc::BT_UTF16, L_PROBA);
+    BOOST_CHECK(wstring(b1.wide_buf()) == L_PROBA);
+    BOOST_CHECK(b1.to_tstring() == T_PROBA);
 
-    pbc::buffer b2(pbc::BT_ANSI, "testПроба");
-    BOOST_CHECK(string(b2.ansi_buf()) == "testПроба");
-    BOOST_CHECK(b2.to_tstring() == TEXT("testПроба"));
+    pbc::buffer b2(pbc::BT_ANSI, PROBA);
+    BOOST_CHECK(string(b2.ansi_buf()) == PROBA);
+    BOOST_CHECK(b2.to_tstring() == T_PROBA);
 }
 
 BOOST_AUTO_TEST_CASE(test_to_tstring)
@@ -121,18 +129,18 @@ BOOST_AUTO_TEST_CASE(test_to_tstring)
     pbc::buffer b;
     BOOST_CHECK(b.to_tstring() == TEXT("<NULL>"));
 
-    b = pbc::buffer(L"testПроба");
-    BOOST_CHECK(b.to_tstring() == TEXT("testПроба"));
+    b = pbc::buffer(L_PROBA);
+    BOOST_CHECK(b.to_tstring() == T_PROBA);
     
-    b = pbc::buffer("testПроба");
-    BOOST_CHECK(b.to_tstring() == TEXT("testПроба"));
+    b = pbc::buffer(PROBA);
+    BOOST_CHECK(b.to_tstring() == T_PROBA);
 }
 
 BOOST_AUTO_TEST_CASE(test_lexical_cast)
 {
-    wstring s1 = L"testПроба";
+    wstring s1 = L_PROBA;
     string s2 = logger::string_cast<string>(s1);
-    BOOST_CHECK(s2 == "testПроба");
+    BOOST_CHECK(s2 == PROBA);
     trace_log << "s1:'" << s1 << "'" << endl;
     trace_log << "s2:'" << s2 << "'" << endl;
 }
@@ -157,16 +165,23 @@ BOOST_AUTO_TEST_CASE(test_orca_load)
     pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
 }
 
-BOOST_AUTO_TEST_CASE(test_orca_basic_ops)
+pbc::orca_session::ptr load_pb9_project(vector<orca_string>& libs)
 {
     pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
 
-    vector<orca_string> libs;
+    libs.clear();
     libs.push_back(orca_string(abs_path("testapp/pb9/main.pbl")));
     libs.push_back(orca_string(abs_path("testapp/pb9/menus.pbl")));
     libs.push_back(orca_string(abs_path("testapp/pb9/windows.pbl")));
     orca->set_library_list(libs);
     orca->set_current_app(libs[0], orca_string("app"));
+    return orca;
+}
+
+BOOST_AUTO_TEST_CASE(test_orca_regen)
+{
+    vector<orca_string> libs;
+    pbc::orca_session::ptr orca = load_pb9_project(libs);
 
     orca->compile_entry_regenerate(libs[1], orca_string("m_genapp_frame"), PBORCA_MENU);
 
@@ -183,6 +198,61 @@ BOOST_AUTO_TEST_CASE(test_orca_basic_ops)
     }
 }
 
+
+BOOST_AUTO_TEST_CASE(test_orca_entry_delete)
+{
+    vector<orca_string> libs;
+    pbc::orca_session::ptr orca = load_pb9_project(libs);
+
+    try {
+        orca->library_entry_delete(libs[1], orca_string("m_genapp_frame_nonexistent1"), PBORCA_MENU);
+        BOOST_CHECK(!"library_entry_delete did not fail");
+    }
+    catch (const pbc::orca_error& e) {
+        debug_log << "orca_compile_error" 
+            << " error_code=" << e.error_code()
+            << " message=" << e.what()
+            << endl;        
+        BOOST_CHECK(e.error_code() == PBORCA_OBJNOTFOUND);
+    }
+    orca->library_entry_delete(libs[1], orca_string("m_genapp_frame_nonexistent2"), PBORCA_MENU, false/*throw*/);
+}
+
+BOOST_AUTO_TEST_CASE(setup_debug_logging)
+{
+    logger::set_level(4);
+}
+
+BOOST_AUTO_TEST_CASE(test_orca_import)
+{
+    vector<orca_string> libs;
+    pbc::orca_session::ptr orca = load_pb9_project(libs);
+
+#define FNAME "bool2num2"
+    string syntax = 
+        "global type " FNAME " from function_object\r\n"
+        "end type\r\n"
+        "\r\n"
+        "forward prototypes\r\n"
+        "global function integer " FNAME " (boolean ab_expr)\r\n"
+        "end prototypes\r\n"
+        "\r\n"
+        "global function integer " FNAME " (boolean ab_expr);If ab_expr Then\r\n"
+        "Return 1\r\n"
+        "Else\r\n"
+        "Return 0\r\n"
+        "End IF\r\n"
+        "Return 0\r\n"
+        "end function\r\n"
+        "\r\n"
+        ;
+
+    orca->library_entry_delete(libs[2], orca_string(FNAME), PBORCA_FUNCTION, false/*throw*/);
+    orca->compile_entry_import(libs[2], orca_string(FNAME), PBORCA_FUNCTION,
+        orca_string("comment"), orca_string(syntax));
+
+
+}
 
 //////////////////////////////////////
 BOOST_AUTO_TEST_CASE(shutdown_app)
