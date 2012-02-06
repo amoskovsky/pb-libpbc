@@ -39,16 +39,37 @@ buffer::buffer( buffer_type type, const char* src, size_t size )
 
 buffer::buffer( const std::wstring& wide_str )
 {
-    trace_log << "buffer::buffer wide_str='<hidden>'" << endl;
+    trace_log << "buffer::buffer wide_str='" << wide_str << "'" << endl;
     wchar_t* buf = (wchar_t*)make_writable(BT_UTF16, wide_str.size());
     std::wcsncpy(buf, wide_str.c_str(), wide_str.size());
 }
 
 buffer::buffer( buffer_type type, const wchar_t* src, size_t size )
 {
-    trace_log << "buffer::buffer type=" << type << " wide_str='<hidden>' size=" << size << endl;
+    trace_log << "buffer::buffer type=" << type << " wide_str='" << src << "' size=" << size << endl;
     wchar_t* buf = (wchar_t*)make_writable(type, size);
     std::wcsncpy(buf, src, size);
+}
+
+buffer::buffer( buffer_type type, const void* c_str )
+{
+    trace_log << "buffer::buffer type=" << type << " c_str=" << c_str << endl;
+    switch (type) {
+    case BT_ANSI: {
+        size_t size = strlen((const char*)c_str);
+        char* buf = (char*)make_writable(type, size);
+        std::strncpy(buf, (const char*)c_str, size);
+        break;
+    }
+    case BT_UTF16: {
+        size_t size = wcslen((const wchar_t*)c_str);
+        wchar_t* buf = (wchar_t*)make_writable(type, size);
+        std::wcsncpy(buf, (const wchar_t*)c_str, size);
+        break;
+    }
+    default:
+        throw runtime_error("buffer::buffer(buffer_type type, const void* c_str) accepts only BT_ANSI or BT_UTF16");
+    }
 }
 
 TCHAR* buffer::make_writable( buffer_type type, size_t size )

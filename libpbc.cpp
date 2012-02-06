@@ -105,6 +105,17 @@ BOOST_AUTO_TEST_CASE(test_utf16_ansi)
     BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
 }
 
+BOOST_AUTO_TEST_CASE(test_from_fake_tchar)
+{
+    pbc::buffer b1(pbc::BT_UTF16, L"testПроба");
+    BOOST_CHECK(wstring(b1.wide_buf()) == L"testПроба");
+    BOOST_CHECK(b1.to_tstring() == TEXT("testПроба"));
+
+    pbc::buffer b2(pbc::BT_ANSI, "testПроба");
+    BOOST_CHECK(string(b2.ansi_buf()) == "testПроба");
+    BOOST_CHECK(b2.to_tstring() == TEXT("testПроба"));
+}
+
 BOOST_AUTO_TEST_CASE(test_to_tstring)
 {
     pbc::buffer b;
@@ -146,15 +157,30 @@ BOOST_AUTO_TEST_CASE(test_orca_load)
     pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
 }
 
-BOOST_AUTO_TEST_CASE(test_orca_init_app)
+BOOST_AUTO_TEST_CASE(test_orca_basic_ops)
 {
     pbc::orca_session::ptr orca(new pbc::orca_session(L"pborc90.dll", 90, false));
+
     vector<orca_string> libs;
     libs.push_back(orca_string(abs_path("testapp/pb9/main.pbl")));
     libs.push_back(orca_string(abs_path("testapp/pb9/menus.pbl")));
     libs.push_back(orca_string(abs_path("testapp/pb9/windows.pbl")));
     orca->set_library_list(libs);
-    orca->set_current_app(orca_string("app"), libs[0]);
+    orca->set_current_app(libs[0], orca_string("app"));
+
+    orca->compile_entry_regenerate(libs[1], orca_string("m_genapp_frame"), PBORCA_MENU);
+
+    try {
+        orca->compile_entry_regenerate(libs[1], orca_string("m_genapp_frame_nonexistent"), PBORCA_MENU);
+        BOOST_CHECK(!"compile_entry_regenerate did not fail");
+    }
+    catch (const pbc::orca_compile_error& e) {
+        debug_log << "orca_compile_error" 
+            << " error_code=" << e.error_code()
+            << " message=" << e.what()
+            << " errors=" << e.error_items().size()
+            << endl;        
+    }
 }
 
 

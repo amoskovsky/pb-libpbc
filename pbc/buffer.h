@@ -29,6 +29,7 @@ public:
     buffer(buffer_type type, const char* src, size_t size);
     buffer(const std::wstring& wide_str);
     buffer(buffer_type type, const wchar_t* src, size_t size);
+    buffer(buffer_type type, const void* c_str);
     // intentionally no copy ctor and assignment operator 
 
     TCHAR* make_writable(buffer_type type, size_t size);
