@@ -276,5 +276,23 @@ tstring buffer::to_tstring()
 #endif
 }
 
+void buffer::erase( size_t begin, size_t end )
+{
+    trace_log << "buffer::erase begin=" << begin << " end=" << end << endl;
+    assert_throw(m_data);
+    assert_throw(begin <= end);
+    assert_throw(end <= m_data->size);
+    m_data->size -= end - begin;
+    switch (m_data->type) {
+    case BT_UTF16: 
+    case BT_ANSI16:
+        begin *= 2;
+        end *= 2;
+        break;
+    }
+    assert_throw(end <= m_data->buf.size());
+    m_data->buf.erase(m_data->buf.begin() + begin, m_data->buf.begin() + end);
+}
+
 
 } // namespace pbc

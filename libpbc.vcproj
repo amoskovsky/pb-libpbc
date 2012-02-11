@@ -215,6 +215,14 @@
 					RelativePath=".\pbc\orca_session.h"
 					>
 				</File>
+				<File
+					RelativePath=".\pbc\pblmi.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pbc\pblmi.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="logger"
@@ -241,6 +249,46 @@
 				</File>
 				<File
 					RelativePath=".\util\scoped_dll.h"
+					>
+				</File>
+				<File
+					RelativePath=".\util\tstring.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="pblmi"
+				>
+				<File
+					RelativePath=".\pblmi\classes.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\classes.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\pbl_format.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\pbl_format_w.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\pblmi.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\pblsdk.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\pbltypes.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pblmi\stdafx.h"
 					>
 				</File>
 			</Filter>

@@ -1,16 +1,12 @@
 #pragma once
 
+#include <util/tstring.h>
+
 #include <vector>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-
-#ifdef UNICODE
-typedef std::wstring tstring;
-#else
-typedef std::string tstring;
-#endif
 
 namespace pbc {
 
@@ -45,6 +41,7 @@ public:
     size_t use_count() const { return m_data ? m_data.use_count() : 0; }
     void make_writable();
     tstring to_tstring();
+    void erase(size_t begin, size_t end);
 private:
     struct data {
         buffer_type type;

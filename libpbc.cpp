@@ -11,6 +11,7 @@
 #include <pbc/buffer.h>
 #include <pbc/orca_session.h>
 #include <util/scoped_dll.h>
+#include <pbc/pblmi.h>
 #include <logger.h>
 
 #include <string>
@@ -18,6 +19,7 @@
 #include <iomanip>
 
 #include <boost/filesystem/v3/operations.hpp>
+#include <boost/foreach.hpp>
 
 using namespace std;
 using pbc::orca_string;
@@ -124,6 +126,20 @@ BOOST_AUTO_TEST_CASE(test_from_fake_tchar)
     BOOST_CHECK(b2.to_tstring() == T_PROBA);
 }
 
+BOOST_AUTO_TEST_CASE(test_buf_erase)
+{
+    pbc::buffer b;
+    b = pbc::buffer(pbc::BT_ANSI, "12345");
+    b.erase(2, 4);
+    BOOST_CHECK(string(b.ansi_buf()) == "125");
+    BOOST_CHECK(b.size() == 3);
+
+    b = pbc::buffer(pbc::BT_UTF16, L"12345");
+    b.erase(2, 4);
+    BOOST_CHECK(wstring(b.wide_buf()) == L"125");
+    BOOST_CHECK(b.size() == 3);
+}
+
 BOOST_AUTO_TEST_CASE(test_to_tstring)
 {
     pbc::buffer b;
@@ -218,17 +234,14 @@ BOOST_AUTO_TEST_CASE(test_orca_entry_delete)
     orca->library_entry_delete(libs[1], orca_string("m_genapp_frame_nonexistent2"), PBORCA_MENU, false/*throw*/);
 }
 
-BOOST_AUTO_TEST_CASE(setup_debug_logging)
-{
-    logger::set_level(4);
-}
 
 BOOST_AUTO_TEST_CASE(test_orca_import)
 {
     vector<orca_string> libs;
     pbc::orca_session::ptr orca = load_pb9_project(libs);
 
-#define FNAME "bool2num2"
+#undef FNAME 
+#define FNAME "bool2num1"
     string syntax = 
         "global type " FNAME " from function_object\r\n"
         "end type\r\n"
@@ -253,6 +266,116 @@ BOOST_AUTO_TEST_CASE(test_orca_import)
 
 
 }
+
+BOOST_AUTO_TEST_CASE(test_orca_import_with_errors)
+{
+    vector<orca_string> libs;
+    pbc::orca_session::ptr orca = load_pb9_project(libs);
+
+#undef FNAME 
+#define FNAME "bool2num2"
+    string syntax = 
+        "global type " FNAME " from function_object\r\n"
+        "end type\r\n"
+        "\r\n"
+        "forward prototypes\r\n"
+        "global function integer " FNAME " (boolean ab_expr)\r\n"
+        "end prototypes\r\n"
+        "\r\n"
+        "global function integer " FNAME " (boolean ab_expr);If ab_expr Then\r\n"
+        "Return 1\r\n"
+        "Else\r\n"
+        "Return 0\r\n"
+        "End IF\r\n"
+        "uo_bad1 luo_bad1\r\n"
+        "Return 0\r\n"
+        "end function\r\n"
+        "\r\n"
+        ;
+
+    orca->library_entry_delete(libs[2], orca_string(FNAME), PBORCA_FUNCTION, false/*throw*/);
+    try {
+        orca->compile_entry_import(libs[2], orca_string(FNAME), PBORCA_FUNCTION, orca_string("comment"), orca_string(syntax));
+        BOOST_CHECK(!"compile_entry_import did not fail");
+    }
+    catch (const pbc::orca_compile_error& e) {
+        debug_log << "orca_compile_error" 
+            << " error_code=" << e.error_code()
+            << " message=" << e.what()
+            << endl;        
+        BOOST_FOREACH(const pbc::orca_compile_error_item& i, e.error_items()) {
+            debug_log << "item: " << i.message_text << endl; 
+        }
+    }
+}
+
+using pbc::pblmi;
+
+BOOST_AUTO_TEST_CASE(test_pblmi_is_source)
+{
+    BOOST_CHECK(!pblmi::is_source_entry("a"));
+    BOOST_CHECK(pblmi::is_source_entry("a.sra"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srd"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srf"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srm"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srq"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srs"));
+    BOOST_CHECK(pblmi::is_source_entry("a.sru"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srw"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srp"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srj"));
+    BOOST_CHECK(pblmi::is_source_entry("a.srx"));
+    BOOST_CHECK(!pblmi::is_source_entry("a.bin"));
+    BOOST_CHECK(!pblmi::is_source_entry("c:\\xxx.jpg"));
+}
+
+
+
+
+template <class Str>
+void test_pblmi_export_impl(const Str& lib_name, const Str& entry_name)
+{
+    pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(lib_name, entry_name);
+    tstring comment = e.comment.to_tstring();
+    tstring data = e.data.to_tstring();
+    trace_log << "comment='" << comment << "'" << endl;
+    BOOST_CHECK(comment == TEXT("Generated About window"));
+    trace_log << "data.size=" << data.size() << endl;
+    BOOST_CHECK(data.size() == 1417);
+}
+
+
+BOOST_AUTO_TEST_CASE(test_pblmi_export_text)
+{
+    debug_log << "ansi app + ansi pbl" << endl;
+    test_pblmi_export_impl(string("testapp/pb9/windows.pbl"), string("w_genapp_about.srw"));
+
+    debug_log << "ansi app + unicode pbl" << endl;
+    test_pblmi_export_impl(string("testapp/pb10/windows.pbl"), string("w_genapp_about.srw"));
+
+    debug_log << "unicode app + ansi pbl" << endl;
+    test_pblmi_export_impl(wstring(L"testapp/pb9/windows.pbl"), wstring(L"w_genapp_about.srw"));
+
+    debug_log << "unicode app + unicode pbl" << endl;
+    test_pblmi_export_impl(wstring(L"testapp/pb10/windows.pbl"), wstring(L"w_genapp_about.srw"));
+}
+
+BOOST_AUTO_TEST_CASE(setup_debug_logging)
+{
+    logger::set_level(5);
+}
+
+BOOST_AUTO_TEST_CASE(test_pblmi_export_bin)
+{
+    pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(string("testapp/pb9/windows.pbl"), string("w_genapp_about.win"));
+    tstring comment = e.comment.to_tstring();
+    trace_log << "comment='" << comment << "'" << endl;
+    BOOST_CHECK(comment.empty());
+    trace_log << "data.size=" << e.data.size() << endl;
+    BOOST_CHECK(e.data.size() == 5090);
+}
+
+
 
 //////////////////////////////////////
 BOOST_AUTO_TEST_CASE(shutdown_app)
