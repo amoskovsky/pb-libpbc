@@ -375,6 +375,28 @@ BOOST_AUTO_TEST_CASE(test_pblmi_export_bin)
     BOOST_CHECK(e.data.size() == 5090);
 }
 
+BOOST_AUTO_TEST_CASE(test_pblmi_export_errors)
+{
+    try {
+        pbc::pblmi::entry e = pbc::pblmi::create()
+            ->export_entry(string("testapp/pb9/windows.pbl"), string("test.missing"));
+        BOOST_CHECK(!"Missing not found error");
+    }
+    catch (const pbc::pbl_entry_not_found& e) {
+        trace_log << "error=" << e.what() << endl;
+    }
+
+    try {
+        pbc::pblmi::entry e = pbc::pblmi::create()
+            ->export_entry(string("testapp/pb9/windows.missing.pbl"), string("test.missing"));
+        BOOST_CHECK(!"Missing not found error");
+    }
+    catch (const pbc::pbl_open_error& e) {
+        trace_log << "error=" << e.what() << endl;
+    }
+
+}
+
 
 
 //////////////////////////////////////
