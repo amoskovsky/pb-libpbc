@@ -352,6 +352,23 @@ BOOST_AUTO_TEST_CASE(test_pblmi_is_source)
     BOOST_CHECK(pblmi::is_source_entry("a.srx"));
     BOOST_CHECK(!pblmi::is_source_entry("a.bin"));
     BOOST_CHECK(!pblmi::is_source_entry("c:\\xxx.jpg"));
+    BOOST_CHECK(pblmi::is_source_entry("w_genapp_about.srw"));
+}
+
+BOOST_AUTO_TEST_CASE(test_pblmi_is_pcode)
+{
+    BOOST_CHECK(!pblmi::is_pcode_entry("a"));
+    BOOST_CHECK(!pblmi::is_pcode_entry("a.sra"));
+    BOOST_CHECK(!pblmi::is_pcode_entry("c:\\xxx.jpg"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.udo"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.dwo"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.str"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.win"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.fun"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.xxy"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.apl"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.pra"));
+    BOOST_CHECK(pblmi::is_pcode_entry("a.exe"));
 }
 
 
@@ -360,6 +377,7 @@ BOOST_AUTO_TEST_CASE(test_pblmi_is_source)
 template <class Str>
 void test_pblmi_export_impl(const Str& lib_name, const Str& entry_name)
 {
+    logger::scoped_level l(5);
     pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(lib_name, entry_name);
     BOOST_CHECK(e.comment.size() == sizeof("Generated About window") - 1);
     BOOST_CHECK(e.data.size() == 1417);

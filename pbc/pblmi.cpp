@@ -117,27 +117,84 @@ bool pblmi::is_source_entry_impl( const Str& entry_name )
     if (entry_name.size() < 5)  // min: "x.sr?"
         return false;
     size_t pos = entry_name.size() - 4;
-    if (entry_name[pos + 0] != '.' 
-        || entry_name[pos + 1] != 's'
-        || entry_name[pos + 2] != 'r')
-        return false;
-    switch (entry_name[pos + 3]) {
-        case 'a': 
-        case 'd':
-        case 'f':
-        case 'm':
-        case 'q':
-        case 's':
-        case 'u':
-        case 'w':
-        case 'p':
-        case 'j':
-        case 'x':
-            return true;
+    //if (entry_name[pos + 0] != '.' 
+    //    || entry_name[pos + 1] != 's'
+    //    || entry_name[pos + 2] != 'r')
+    //    return false;
+    //switch (entry_name[pos + 3]) {
+    //    case 'a': 
+    //    case 'd':
+    //    case 'f':
+    //    case 'm':
+    //    case 'q':
+    //    case 's':
+    //    case 'u':
+    //    case 'w':
+    //    case 'p':
+    //    case 'j':
+    //    case 'x':
+    //        return true;
+    //    default:
+    //        return false;
+    //}
+    union {
+        DWORD ext;
+        char ch[4];
+    };
+    ch[3] =  (char)entry_name[pos + 0];
+    ch[2] =  (char)entry_name[pos + 1];
+    ch[1] =  (char)entry_name[pos + 2];
+    ch[0] =  (char)entry_name[pos + 3];
+    switch (ext) {
+        case '.sra':
+        case '.srd':
+        case '.srf':
+        case '.srm':
+        case '.srq':
+        case '.srs':
+        case '.sru':
+        case '.srw':
+        case '.srp':
+        case '.srj':
+        case '.srx':
+            return true;    
         default:
             return false;
     }
 }
+
+
+template <class Str>
+bool pblmi::is_pcode_entry_impl( const Str& entry_name )
+{
+    if (entry_name.size() < 5)  // min: "x.???"
+        return false;
+    size_t pos = entry_name.size() - 4;
+    union {
+        DWORD ext;
+        char ch[4];
+    };
+    ch[3] =  (char)entry_name[pos + 0];
+    ch[2] =  (char)entry_name[pos + 1];
+    ch[1] =  (char)entry_name[pos + 2];
+    ch[0] =  (char)entry_name[pos + 3];
+    switch (ext) {
+        case '.udo':
+        case '.win':
+        case '.apl':
+        case '.dwo':
+        case '.men':
+        case '.fun':
+        case '.str':
+        case '.xxy':
+        case '.pra':
+        case '.exe':
+            return true;    
+        default:
+            return false;
+    }
+}
+
 
 pblmi::entry pblmi::export_entry( const std::string& lib_name, const std::string& entry_name )
 {
@@ -288,6 +345,16 @@ void pblmi::delete_entry( const std::string& lib_name, const std::string& entry_
 void pblmi::delete_entry( const std::wstring& lib_name, const std::wstring& entry_name )
 {
     delete_entry_impl(lib_name, entry_name);
+}
+
+bool pblmi::is_pcode_entry( const std::string& entry_name )
+{
+    return is_pcode_entry_impl(entry_name);
+}
+
+bool pblmi::is_pcode_entry( const std::wstring& entry_name )
+{
+    return is_pcode_entry_impl(entry_name);
 }
 
 
