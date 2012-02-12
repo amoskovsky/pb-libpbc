@@ -818,16 +818,17 @@ PBLMI_PBL::Close(void)
 }
 
 
-PBLMI_Result PBLMI_PBL::Dir(IPBLMI_Callback *iCallBack)
+PBLMI_Result PBLMI_PBL::Dir(IPBLMI_Callback *iCallBack, BOOL bConvertNames)
 {
-	return ReadNodeEntries(m_StartOffset + m_RootNodeOffset, iCallBack);
+	return ReadNodeEntries(m_StartOffset + m_RootNodeOffset, iCallBack, bConvertNames);
 }
 
 
 PBLMI_Result PBLMI_PBL::ReadNodeEntries
 (
 	DWORD dwNode, 
-	IPBLMI_Callback *iCallBack
+	IPBLMI_Callback *iCallBack, 
+    BOOL bConvertNames
 )
 {
 	if (!dwNode)
@@ -864,11 +865,16 @@ PBLMI_Result PBLMI_PBL::ReadNodeEntries
 		if(strncmp(pent->sign, "ENT*", 4))
 			return PBLMI_BADFORMAT;
 		//p("5");
-		ei.entry_name = m_iPbLMI->ConvCodePage(
-			(char *) (data.buffer() + ent_offset + m_EntFixedLen),
-			GetPF(pent,entry_name_len),
-			m_bUTF
-		);
+        if (bConvertNames) {
+            ei.entry_name = m_iPbLMI->ConvCodePage(
+                (char *) (data.buffer() + ent_offset + m_EntFixedLen),
+                GetPF(pent,entry_name_len),
+                m_bUTF
+                );
+        }
+        else {
+            ei.entry_name = (char *) (data.buffer() + ent_offset + m_EntFixedLen);
+        }
 		if(m_bUTF)
 			pent_W->comment_len *= 2;
 		ei.comment_len = GetPF(pent, comment_len);
@@ -880,8 +886,10 @@ PBLMI_Result PBLMI_PBL::ReadNodeEntries
 		ei.entry_len = m_EntFixedLen + GetPF(pent,entry_name_len);
 		//printf("entry len = %i\n", ei.entry_len);
 		BOOL ret = iCallBack->DirCallback(&ei);
-		if (ei.entry_name)
-			delete [] ei.entry_name;
+        if (bConvertNames) {
+		    if (ei.entry_name)
+			    delete [] ei.entry_name;
+        }
 		if (!ret)
 			return PBLMI_ABORT;  
 		ent_offset += m_EntFixedLen + GetPF(pent,entry_name_len);
@@ -890,10 +898,10 @@ PBLMI_Result PBLMI_PBL::ReadNodeEntries
 	data.FreeBuffer(); 
 	//p("7");
 	PBLMI_Result ret;
-	ret = ReadNodeEntries(nod.left,  iCallBack);
+	ret = ReadNodeEntries(nod.left,  iCallBack, bConvertNames);
 	if( ret != PBLMI_OK )
 		return ret;
-	ret = ReadNodeEntries(nod.right, iCallBack);
+	ret = ReadNodeEntries(nod.right, iCallBack, bConvertNames);
 	if( ret != PBLMI_OK )
 		return ret;
 

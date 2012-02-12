@@ -17,9 +17,11 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <map>
 
 #include <boost/filesystem/v3/operations.hpp>
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 
 using namespace std;
 using pbc::orca_string;
@@ -421,7 +423,7 @@ BOOST_AUTO_TEST_CASE(test_pblmi_export_errors)
 template <class Str>
 void test_pblmi_import_impl(const Str& lib_name, const Str& entry_name)
 {
-    //    logger::scoped_level l(5);
+    //logger::scoped_level l(5);
     pbc::pblmi::ptr p = pbc::pblmi::create();
     pbc::buffer c, d;
     c = pbc::buffer(L"test comm11");
@@ -443,6 +445,41 @@ BOOST_AUTO_TEST_CASE(test_pblmi_import)
 {
     test_pblmi_import_impl(string("testapp/pb9/windows.pbl"), string("u_test.sru"));
     test_pblmi_import_impl(string("testapp/pb10/windows.pbl"), string("u_test.sru"));
+}
+
+struct test_pblmi_list_impl_handler {
+    map<tstring, int> names;
+    bool handler(pbc::pblmi::dir_entry& e)
+    {
+        debug_log << "name=" << e.name.to_tstring() << " mod_time=" << e.mod_time << "(" << (e.mod_time - time(0)) << ")" << endl;
+        names[e.name.to_tstring()] ++;
+        return true;
+    }
+};
+template <class Str>
+void test_pblmi_list_impl(const Str& lib_name)
+{
+    //logger::scoped_level l(4);
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    test_pblmi_list_impl_handler h;
+    p->list_entries(lib_name, boost::bind(&test_pblmi_list_impl_handler::handler, &h, _1));
+
+    BOOST_CHECK(h.names[TEXT("w_genapp_about.srw")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_about.win")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_frame.srw")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_frame.win")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_sheet.srw")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_sheet.win")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_toolbars.srw")] == 1);
+    BOOST_CHECK(h.names[TEXT("w_genapp_toolbars.win")] == 1);
+}
+
+BOOST_AUTO_TEST_CASE(test_pblmi_list)
+{
+    test_pblmi_list_impl(string("testapp/pb9/windows.pbl"));
+    test_pblmi_list_impl(wstring(L"testapp/pb9/windows.pbl"));
+    test_pblmi_list_impl(string("testapp/pb10/windows.pbl"));
+    test_pblmi_list_impl(wstring(L"testapp/pb10/windows.pbl"));
 }
 
 

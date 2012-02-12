@@ -181,6 +181,7 @@ void pblmi::import_entry_impl( const Str& lib_name, const Str& entry_name, pbc::
         comment.make_writable(BT_BINARY, 0);
     }
     else {
+        assert_throw(comment.size() < 32768);
         comment.make(is_unicode ? BT_UTF16 : BT_ANSI);
         comment.make(BT_BINARY);
     }
@@ -196,7 +197,7 @@ void pblmi::import_entry_impl( const Str& lib_name, const Str& entry_name, pbc::
         data.make(BT_BINARY);
     }
     data.insert(0, comment, 0, comment.size());
-    entry.mod_time = mod_time;
+    entry.mod_time = (DWORD)mod_time;
     ret = lib->UpdateEntryData(&entry, data.buf(), data.size() - comment.size(), comment.size());
     if (ret != PBLMI_OK) {
         debug_log << "UpdateEntryData failed for '" << entry_name << "' code=" << (int)ret << endl;
@@ -212,6 +213,48 @@ void pblmi::import_entry( const std::string& lib_name, const std::string& entry_
 void pblmi::import_entry( const std::wstring& lib_name, const std::wstring& entry_name, pbc::buffer data, pbc::buffer comment /*= pbc::buffer()*/, time_t mod_time /*= 0*/ )
 {
     return import_entry_impl(lib_name, entry_name, data, comment);
+}
+
+
+struct list_entries_handler: IPBLMI_Callback {
+    pblmi::list_callback_t handler;
+    bool is_unicode;
+    virtual BOOL DirCallback(PBL_ENTRYINFO *pEntry) 
+    { 
+        trace_log << "DirCallback"<< endl;
+        if (!handler)
+            return true;
+        pblmi::dir_entry e;
+        e.mod_time = pEntry->mod_time;
+        trace_log << "name_len=" << pEntry->name_len << endl;
+        e.name = pbc::buffer(is_unicode ?  BT_UTF16 : BT_ANSI, pEntry->entry_name);
+        return handler(e);
+    }
+};
+
+template <class Str>
+void pblmi::list_entries_impl( const Str& lib_name, list_callback_t handler )
+{
+    trace_log << "pblmi::list_entries lib_name=" << lib_name << endl;
+    library lib = m_impl->OpenLibrary(lib_name.c_str(), FALSE /*bReadWrite*/);
+    if (!lib) {
+        debug_log << "OpenLibrary failed for '" << lib_name << "'" << endl;
+        throw pbl_open_error("Missing or invalid library: " + logger::string_cast<string>(lib_name));
+    }
+    list_entries_handler h;
+    h.handler = handler;
+    h.is_unicode = lib->isUnicode() != 0;
+    lib->Dir(&h, FALSE);
+}
+
+void pblmi::list_entries( const std::string& lib_name, list_callback_t handler )
+{
+    list_entries_impl(lib_name, handler);
+}
+
+void pblmi::list_entries( const std::wstring& lib_name, list_callback_t handler )
+{
+    list_entries_impl(lib_name, handler);
 }
 
 

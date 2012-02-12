@@ -99,7 +99,7 @@ class IPBLMI_PBL
 {
 public:
     virtual PBLMI_Result Optimize(const char *szNewLibName, int nTgtPBLVer = 0) = 0;
-    virtual PBLMI_Result Dir(IPBLMI_Callback *iCallBack) = 0;
+    virtual PBLMI_Result Dir(IPBLMI_Callback *iCallBack, BOOL bConvertNames = TRUE) = 0;
     virtual PBLMI_Result SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCreate = FALSE) = 0;
     virtual PBLMI_Result SeekEntry(const wchar_t *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCreate = FALSE) = 0;
     virtual PBLMI_Result DeleteEntry(PBL_ENTRYINFO *pEntry) = 0;

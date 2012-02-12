@@ -261,7 +261,7 @@ class PBLMI_PBL: public IPBLMI_PBL
 	}
 
 
-	PBLMI_Result Dir(IPBLMI_Callback *iCallBack);
+	PBLMI_Result Dir(IPBLMI_Callback *iCallBack, BOOL bConvertNames = TRUE);
 
 	void Flush();
 
@@ -271,7 +271,8 @@ class PBLMI_PBL: public IPBLMI_PBL
 	PBLMI_Result ReadNodeEntries
 	(
 		DWORD dwNode, 
-		IPBLMI_Callback *iCallBack
+		IPBLMI_Callback *iCallBack,
+        BOOL bConvertNames
 	);
 	PBLMI_Result 
 	SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCreate, DWORD dwNode);
