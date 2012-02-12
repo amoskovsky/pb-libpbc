@@ -418,26 +418,31 @@ BOOST_AUTO_TEST_CASE(test_pblmi_export_errors)
 
 }
 
-BOOST_AUTO_TEST_CASE(test_pblmi_import)
+template <class Str>
+void test_pblmi_import_impl(const Str& lib_name, const Str& entry_name)
 {
-//    logger::scoped_level l(5);
+    //    logger::scoped_level l(5);
     pbc::pblmi::ptr p = pbc::pblmi::create();
-    string lib = "testapp/pb9/windows.pbl";
-    string entry_name = "u_test.sru";
     pbc::buffer c, d;
     c = pbc::buffer(L"test comm11");
     d = pbc::buffer(L_PROBA);
-    p->import_entry(lib, entry_name, d, c);
-    
-    pbc::pblmi::entry e = p->export_entry(lib, entry_name);
+    p->import_entry(lib_name, entry_name, d, c);
+
+    pbc::pblmi::entry e = p->export_entry(lib_name, entry_name);
     trace_log << "e.comment.size()=" << e.comment.size() << endl;
     trace_log << "e.comment='" << e.comment.to_tstring() << "'" << endl;
     BOOST_CHECK(e.comment.to_tstring() == TEXT("test comm11"));
-
     trace_log << "e.data.size()=" << e.data.size() << endl;
     BOOST_CHECK(e.data.size() == sizeof(T_PROBA)/sizeof(TCHAR) - 1);
     trace_log << "e.data=" << e.data.to_tstring() << endl;
     BOOST_CHECK(e.data.to_tstring() == T_PROBA);
+
+}
+
+BOOST_AUTO_TEST_CASE(test_pblmi_import)
+{
+    test_pblmi_import_impl(string("testapp/pb9/windows.pbl"), string("u_test.sru"));
+    test_pblmi_import_impl(string("testapp/pb10/windows.pbl"), string("u_test.sru"));
 }
 
 
