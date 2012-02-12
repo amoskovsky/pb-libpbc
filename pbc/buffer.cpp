@@ -274,6 +274,9 @@ tstring buffer::to_tstring()
 {
     if (!m_data)
         return tstring(TEXT("<NULL>"));
+    if (m_data->type == BT_BINARY)
+        return tstring(TEXT("<BINARY><")) + boost::lexical_cast<tstring>(m_data->size) + tstring(TEXT(">"));
+
     buffer tmp = *this;
 #ifdef UNICODE
     return tmp.make_utf16();

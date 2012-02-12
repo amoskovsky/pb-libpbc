@@ -258,5 +258,37 @@ void pblmi::list_entries( const std::wstring& lib_name, list_callback_t handler 
 }
 
 
+template <class Str>
+void pblmi::delete_entry_impl( const Str& lib_name, const Str& entry_name )
+{
+    trace_log << "pblmi::delete_entry lib_name=" << lib_name << " entry_name=" << entry_name << endl;
+    library lib = m_impl->OpenLibrary(lib_name.c_str(), TRUE /*bReadWrite*/);
+    if (!lib) {
+        debug_log << "OpenLibrary failed for '" << lib_name << "'" << endl;
+        throw pbl_open_error("Missing or invalid library: " + logger::string_cast<string>(lib_name));
+    }
+    PBL_ENTRYINFO entry;
+    PBLMI_Result ret = lib->SeekEntry(entry_name.c_str(), &entry, FALSE /*bCreate*/);   
+    if (ret != PBLMI_OK) {
+        debug_log << "SeekEntry failed for '" << entry_name << "' code=" << (int)ret << endl;
+        throw pbl_entry_not_found("Entry not found: " + logger::string_cast<string>(entry_name));
+    }
+    ret = lib->DeleteEntry(&entry);
+    if (ret != PBLMI_OK) {
+        debug_log << "DeleteEntry failed for '" << entry_name << "' code=" << (int)ret << endl;
+        throw pblmi_error("Entry could not be deleted: " + logger::string_cast<string>(entry_name));
+    }
+}
+
+void pblmi::delete_entry( const std::string& lib_name, const std::string& entry_name )
+{
+    delete_entry_impl(lib_name, entry_name);
+}
+
+void pblmi::delete_entry( const std::wstring& lib_name, const std::wstring& entry_name )
+{
+    delete_entry_impl(lib_name, entry_name);
+}
+
 
 } // namespace pbc

@@ -482,6 +482,29 @@ BOOST_AUTO_TEST_CASE(test_pblmi_list)
     test_pblmi_list_impl(wstring(L"testapp/pb10/windows.pbl"));
 }
 
+BOOST_AUTO_TEST_CASE(test_pblmi_delete_entry)
+{
+    //logger::scoped_level l(5);
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    string lib_name = "testapp/pb9/windows.pbl";
+    string entry_name = "w_genapp_about.srw";
+    pbc::pblmi::entry e1 = p->export_entry(lib_name, entry_name);
+    p->import_entry(lib_name, entry_name + ".tmp", e1.data, e1.comment);
+    pbc::pblmi::entry e2 = p->export_entry(lib_name, entry_name + ".tmp");
+    debug_log << "e2.data=" << e2.data.to_tstring() << endl;
+    BOOST_CHECK(e1.comment.to_tstring() == e2.comment.to_tstring());
+    BOOST_CHECK(e1.data.size() == e2.data.size());
+    
+    p->delete_entry(lib_name, entry_name + ".tmp");
+    try {
+        pbc::pblmi::entry e3 = p->export_entry(lib_name, entry_name + ".tmp");
+        BOOST_CHECK(!"Entry eas not deleted");    
+    }
+    catch (pbc::pbl_entry_not_found& e) {
+        debug_log << "exception pbl_entry_not_found=" << e.what() << endl;
+    }
+
+}
 
 //////////////////////////////////////
 BOOST_AUTO_TEST_CASE(shutdown_app)

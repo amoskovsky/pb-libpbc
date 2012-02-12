@@ -43,12 +43,16 @@ public:
     void list_entries(const std::string& lib_name, list_callback_t handler);
     void list_entries(const std::wstring& lib_name, list_callback_t handler);
 
+    void delete_entry(const std::string& lib_name, const std::string& entry_name);
+    void delete_entry(const std::wstring& lib_name, const std::wstring& entry_name);
+
 private:
     pblmi();
     template <class Str> pblmi::entry export_entry_impl(const Str& lib_name, const Str& entry_name);
     template <class Str> void import_entry_impl(const Str& lib_name, const Str& entry_name, pbc::buffer data, pbc::buffer comment = pbc::buffer(), time_t mod_time = 0);
     template <class Str> static bool is_source_entry_impl(const Str& entry_name);
     template <class Str> void list_entries_impl(const Str& lib_name, list_callback_t handler);
+    template <class Str> void delete_entry_impl(const Str& lib_name, const Str& entry_name);
 private:
     IPBLMI* m_impl;
     static pblmi::ptr m_instance;
