@@ -140,6 +140,29 @@ BOOST_AUTO_TEST_CASE(test_buf_erase)
     BOOST_CHECK(b.size() == 3);
 }
 
+
+BOOST_AUTO_TEST_CASE(test_buf_insert)
+{
+    //logger::scoped_level l(5);
+    pbc::buffer b1, b2;
+    b1 = pbc::buffer(pbc::BT_ANSI, "12345");
+    b2 = pbc::buffer(pbc::BT_ANSI, "678");
+    b1.insert(2, b2, 1, 3);
+    BOOST_CHECK(string(b1.ansi_buf()) == "1278345");
+    BOOST_CHECK(b1.size() == 7);
+    b1.insert(2, pbc::buffer(), 1, 1);
+    BOOST_CHECK(string(b1.ansi_buf()) == "1278345");
+
+    b1 = pbc::buffer(pbc::BT_UTF16, L"12345");
+    b2 = pbc::buffer(pbc::BT_UTF16, L"678");
+    b1.insert(2, b2, 1, 3);
+    BOOST_CHECK(wstring(b1.wide_buf()) == L"1278345");
+    BOOST_CHECK(b1.size() == 7);
+    b1.insert(2, pbc::buffer(), 1, 1);
+    BOOST_CHECK(wstring(b1.wide_buf()) == L"1278345");
+
+}
+
 BOOST_AUTO_TEST_CASE(test_to_tstring)
 {
     pbc::buffer b;
@@ -336,6 +359,8 @@ template <class Str>
 void test_pblmi_export_impl(const Str& lib_name, const Str& entry_name)
 {
     pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(lib_name, entry_name);
+    BOOST_CHECK(e.comment.size() == sizeof("Generated About window") - 1);
+    BOOST_CHECK(e.data.size() == 1417);
     tstring comment = e.comment.to_tstring();
     tstring data = e.data.to_tstring();
     trace_log << "comment='" << comment << "'" << endl;
@@ -360,10 +385,6 @@ BOOST_AUTO_TEST_CASE(test_pblmi_export_text)
     test_pblmi_export_impl(wstring(L"testapp/pb10/windows.pbl"), wstring(L"w_genapp_about.srw"));
 }
 
-BOOST_AUTO_TEST_CASE(setup_debug_logging)
-{
-    logger::set_level(5);
-}
 
 BOOST_AUTO_TEST_CASE(test_pblmi_export_bin)
 {
@@ -397,6 +418,27 @@ BOOST_AUTO_TEST_CASE(test_pblmi_export_errors)
 
 }
 
+BOOST_AUTO_TEST_CASE(test_pblmi_import)
+{
+//    logger::scoped_level l(5);
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    string lib = "testapp/pb9/windows.pbl";
+    string entry_name = "u_test.sru";
+    pbc::buffer c, d;
+    c = pbc::buffer(L"test comm11");
+    d = pbc::buffer(L_PROBA);
+    p->import_entry(lib, entry_name, d, c);
+    
+    pbc::pblmi::entry e = p->export_entry(lib, entry_name);
+    trace_log << "e.comment.size()=" << e.comment.size() << endl;
+    trace_log << "e.comment='" << e.comment.to_tstring() << "'" << endl;
+    BOOST_CHECK(e.comment.to_tstring() == TEXT("test comm11"));
+
+    trace_log << "e.data.size()=" << e.data.size() << endl;
+    BOOST_CHECK(e.data.size() == sizeof(T_PROBA)/sizeof(TCHAR) - 1);
+    trace_log << "e.data=" << e.data.to_tstring() << endl;
+    BOOST_CHECK(e.data.to_tstring() == T_PROBA);
+}
 
 
 //////////////////////////////////////

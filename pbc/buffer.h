@@ -42,6 +42,7 @@ public:
     void make_writable();
     tstring to_tstring();
     void erase(size_t begin, size_t end);
+    void insert(size_t where, const buffer& from, size_t begin, size_t end);
 private:
     struct data {
         buffer_type type;

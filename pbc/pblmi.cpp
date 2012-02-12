@@ -88,7 +88,7 @@ pblmi::entry pblmi::export_entry_impl( const Str& lib_name, const Str& entry_nam
     result.mod_time = entry.mod_time;
     result.is_unicode = lib->isUnicode() != 0;
     result.comment.make_writable(BT_BINARY, entry.comment_len);
-    result.data.make_writable(BT_BINARY, entry.comment_len + entry.data_len);
+    result.data.make_writable(BT_BINARY, entry.data_len /*incl comment len*/);
     ret = lib->ReadEntryData(&entry, result.data.buf());
     if (ret != PBLMI_OK) {
         debug_log << "ReadEntryData failed for '" << entry_name << "' code=" << (int)ret << endl;
@@ -98,9 +98,9 @@ pblmi::entry pblmi::export_entry_impl( const Str& lib_name, const Str& entry_nam
         memcpy(result.comment.buf(), result.data.buf(), entry.comment_len);
         result.data.erase(0, entry.comment_len);
     }
-    result.comment.make(result.is_unicode ? pbc::BT_UTF16 : pbc::BT_ANSI);
+    result.comment.make(result.is_unicode ? BT_UTF16 : BT_ANSI);
     if (is_source_entry(entry_name)) {
-        result.data.make(result.is_unicode ? pbc::BT_UTF16 : pbc::BT_ANSI);
+        result.data.make(result.is_unicode ? BT_UTF16 : BT_ANSI);
     }
     return result;
 }
@@ -159,6 +159,60 @@ bool pblmi::is_source_entry( const std::wstring& entry_name )
     return is_source_entry_impl(entry_name);
 }
 
+
+template <class Str>
+void pblmi::import_entry_impl( const Str& lib_name, const Str& entry_name, pbc::buffer data, pbc::buffer comment /*= pbc::buffer()*/, time_t mod_time /*= 0*/ )
+{
+    trace_log << "pblmi::import_entry lib_name=" << lib_name << " entry_name=" << entry_name << endl;
+    library lib = m_impl->OpenLibrary(lib_name.c_str(), TRUE /*bReadWrite*/);
+    if (!lib) {
+        debug_log << "OpenLibrary failed for '" << lib_name << "'" << endl;
+        throw pbl_open_error("Missing or invalid library: " + logger::string_cast<string>(lib_name));
+    }
+    PBL_ENTRYINFO entry;
+    PBLMI_Result ret = lib->SeekEntry(entry_name.c_str(), &entry, TRUE /*bCreate*/);   
+    if (ret != PBLMI_OK) {
+        debug_log << "SeekEntry failed for '" << entry_name << "' code=" << (int)ret << endl;
+        throw pblmi_error("Entry could not be created: " + logger::string_cast<string>(entry_name));
+    }
+
+    bool is_unicode = lib->isUnicode() != 0;
+    if (!comment) {
+        comment.make_writable(BT_BINARY, 0);
+    }
+    else {
+        comment.make(is_unicode ? BT_UTF16 : BT_ANSI);
+        comment.make(BT_BINARY);
+    }
+
+    if (!data) {
+        data.make_writable(BT_BINARY, 0);
+    }
+    else if (is_source_entry(entry_name)) {
+        data.make(is_unicode ? BT_UTF16 : BT_ANSI);
+        data.make(BT_BINARY);
+    }
+    else {
+        data.make(BT_BINARY);
+    }
+    data.insert(0, comment, 0, comment.size());
+    entry.mod_time = mod_time;
+    ret = lib->UpdateEntryData(&entry, data.buf(), data.size() - comment.size(), comment.size());
+    if (ret != PBLMI_OK) {
+        debug_log << "UpdateEntryData failed for '" << entry_name << "' code=" << (int)ret << endl;
+        throw pblmi_error("Entry could not be written: " + logger::string_cast<string>(entry_name));
+    }
+}
+
+void pblmi::import_entry( const std::string& lib_name, const std::string& entry_name, pbc::buffer data, pbc::buffer comment /*= pbc::buffer()*/, time_t mod_time /*= 0*/ )
+{
+    return import_entry_impl(lib_name, entry_name, data, comment);
+}
+
+void pblmi::import_entry( const std::wstring& lib_name, const std::wstring& entry_name, pbc::buffer data, pbc::buffer comment /*= pbc::buffer()*/, time_t mod_time /*= 0*/ )
+{
+    return import_entry_impl(lib_name, entry_name, data, comment);
+}
 
 
 

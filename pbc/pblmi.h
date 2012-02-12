@@ -28,6 +28,9 @@ public:
     pblmi::entry export_entry(const std::string& lib_name, const std::string& entry_name);
     pblmi::entry export_entry(const std::wstring& lib_name, const std::wstring& entry_name);
     
+    void import_entry(const std::string& lib_name, const std::string& entry_name, pbc::buffer data, pbc::buffer comment = pbc::buffer(), time_t mod_time = 0);
+    void import_entry(const std::wstring& lib_name, const std::wstring& entry_name, pbc::buffer data, pbc::buffer comment = pbc::buffer(), time_t mod_time = 0);
+
     static bool is_source_entry(const std::string& entry_name);
     static bool is_source_entry(const std::wstring& entry_name);
 
@@ -35,6 +38,7 @@ private:
     pblmi();
     template <class Str> pblmi::entry export_entry_impl(const Str& lib_name, const Str& entry_name);
     template <class Str> static bool is_source_entry_impl(const Str& entry_name);
+    template <class Str> void import_entry_impl(const Str& lib_name, const Str& entry_name, pbc::buffer data, pbc::buffer comment = pbc::buffer(), time_t mod_time = 0);
 
 private:
     IPBLMI* m_impl;

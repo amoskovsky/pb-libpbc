@@ -259,6 +259,12 @@ TCHAR* buffer::make( buffer_type type )
         return (TCHAR*)make_ansi();
     case BT_UTF16:
         return (TCHAR*)make_utf16();
+    case BT_BINARY:
+        make_writable();
+        if (m_data->type == BT_UTF16 || m_data->type == BT_ANSI16)
+            m_data->size *= 2;
+        m_data->type = type;
+        return buf();
     default:
         throw runtime_error("buffer::make() acepts only BT_ANSI and BT_UTF16");
     }
@@ -282,6 +288,9 @@ void buffer::erase( size_t begin, size_t end )
     assert_throw(m_data);
     assert_throw(begin <= end);
     assert_throw(end <= m_data->size);
+    if (begin == end)
+        return;
+    make_writable();
     m_data->size -= end - begin;
     switch (m_data->type) {
     case BT_UTF16: 
@@ -292,6 +301,36 @@ void buffer::erase( size_t begin, size_t end )
     }
     assert_throw(end <= m_data->buf.size());
     m_data->buf.erase(m_data->buf.begin() + begin, m_data->buf.begin() + end);
+}
+
+void buffer::insert( size_t where, const buffer& from, size_t begin, size_t end )
+{
+    trace_log << "buffer::insert where=" << where << " begin=" << begin << " end=" << end << endl;
+    if (!from && begin == end)
+        return;
+    assert_throw(m_data);
+    assert_throw(from.m_data);
+    trace_log << "from.m_data->size=" << from.m_data->size << endl;
+    assert_throw(type() == from.type());
+    assert_throw(begin <= end);
+    assert_throw(end <= from.m_data->size);
+    assert_throw(where <= m_data->size);
+    if (begin == end)
+        return;
+
+    make_writable();
+    m_data->size += end - begin;
+    switch (m_data->type) {
+    case BT_UTF16: 
+    case BT_ANSI16:
+        where *= 2;
+        begin *= 2;
+        end *= 2;
+        break;
+    }
+    m_data->buf.insert(m_data->buf.begin() + where, 
+        from.m_data->buf.begin() + begin, 
+        from.m_data->buf.begin() + end);
 }
 
 
