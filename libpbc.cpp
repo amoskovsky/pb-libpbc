@@ -39,6 +39,7 @@ BOOST_AUTO_TEST_CASE(setup_app)
 {
     logger::setup("debug/error.log", true, 3);
     logger::truncate();
+    system("chcp 1251");
 }
 ///////////////////////////////////////
 
@@ -463,6 +464,26 @@ BOOST_AUTO_TEST_CASE(test_pblmi_import)
 {
     test_pblmi_import_impl(string("testapp/pb9/windows.pbl"), string("u_test.sru"));
     test_pblmi_import_impl(string("testapp/pb10/windows.pbl"), string("u_test.sru"));
+}
+
+BOOST_AUTO_TEST_CASE(test_pblmi_bad_import_pb10)
+{
+    unlink("testapp/pb10/pbres_data_after.pbd");
+    boost::filesystem::copy_file("testapp/pb10/pbres_data_before.pbd", "testapp/pb10/pbres_data_after.pbd");
+    size_t size = (size_t)boost::filesystem::file_size("testapp/pb10/cancel1.bmp");
+    ifstream in("testapp/pb10/cancel1.bmp", ios::binary);
+    BOOST_CHECK(in.good());
+    pbc::buffer d(pbc::BT_BINARY, size);
+    in.read(d.ansi_buf(), size);
+    
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    pbc::buffer c;
+    p->import_entry(wstring(L"testapp/pb10/pbres_data_after.pbd"), wstring(L"res\\cancel1.bmp"), d, c);
+    //p->import_entry(string("testapp/pb10/pbres_data_after.pbd"), string("res\\cancel1.bmp"), d, c);
+
+    pbc::pblmi::entry e = p->export_entry(wstring(L"testapp/pb10/pbres_data_after.pbd"), wstring(L"res\\cancel1.bmp"));
+    trace_log << "e.data.size()=" << e.data.size() << endl;
+    BOOST_CHECK(e.data.size() == d.size());
 }
 
 struct test_pblmi_list_impl_handler {

@@ -47,6 +47,7 @@ PBLMI_PBL::SeekEntry( const wchar_t *szEntryName, PBL_ENTRYINFO * pEntry, BOOL b
     }
     else {
         pEntry->entry_name = (char*)szEntryName;
+        pEntry->name_len *= 2;
         ret = this->SeekEntry(NULL, pEntry, bCreate, m_StartOffset + m_RootNodeOffset);
     }
     pEntry->entry_name = NULL;
