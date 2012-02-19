@@ -13,6 +13,7 @@
 #include <util/scoped_dll.h>
 #include <pbc/pblmi.h>
 #include <logger.h>
+#include <pbparser/dependency_parser.h>
 
 #include <string>
 #include <sstream>
@@ -378,7 +379,7 @@ BOOST_AUTO_TEST_CASE(test_pblmi_is_pcode)
 template <class Str>
 void test_pblmi_export_impl(const Str& lib_name, const Str& entry_name)
 {
-    logger::scoped_level l(5);
+    //logger::scoped_level l(5);
     pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(lib_name, entry_name);
     BOOST_CHECK(e.comment.size() == sizeof("Generated About window") - 1);
     BOOST_CHECK(e.data.size() == 1417);
@@ -486,6 +487,15 @@ BOOST_AUTO_TEST_CASE(test_pblmi_bad_import_pb10)
     BOOST_CHECK(e.data.size() == d.size());
 }
 
+BOOST_AUTO_TEST_CASE(test_pblmi_bad_export)
+{
+    //logger::scoped_level l(5);
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    pbc::pblmi::entry e = p->export_entry(wstring(L"testapp/pb10/pbres_data_before.pbd"), wstring(L"res\\cancel.bmp"));
+    trace_log << "e.data.size()=" << e.data.size() << endl;
+    BOOST_CHECK(e.data.size() == 246);
+}
+
 struct test_pblmi_list_impl_handler {
     map<tstring, int> names;
     bool handler(pbc::pblmi::dir_entry& e)
@@ -543,6 +553,23 @@ BOOST_AUTO_TEST_CASE(test_pblmi_delete_entry)
         debug_log << "exception pbl_entry_not_found=" << e.what() << endl;
     }
 
+}
+
+BOOST_AUTO_TEST_CASE(test_dependency_parser)
+{
+    logger::scoped_level l(5);
+    pbc::pblmi::ptr p = pbc::pblmi::create();
+    pbc::pblmi::entry e;
+
+    e = p->export_entry("testapp/pb9/windows.pbl", "w_genapp_about.srw");
+    pbparser::dependency_parser dp;
+    dp.parse(e.data);
+    wstring dep;
+    BOOST_FOREACH(wstring a, dp.get_dependencies()) {
+        dep += L"[" + a + L"]";
+    }
+    trace_log << "dep: " << dep << endl;
+    BOOST_CHECK(dep == L"[commandbutton][statictext][window]");
 }
 
 //////////////////////////////////////

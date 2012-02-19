@@ -21,12 +21,14 @@ PBLMI_PBL::SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCrea
     PBLMI_Result ret;
     pEntry->name_len = strlen(szEntryName);
     if (m_bUTF) {
+        trace_log << "SeekEntryA utf"<< endl;
         pEntry->entry_name =  MultiToWide(szEntryName, pEntry->name_len + 1, CP_ACP);
         pEntry->name_len = wcslen((const wchar_t *)pEntry->entry_name) * 2;
         ret = this->SeekEntry(NULL, pEntry, bCreate, m_StartOffset + m_RootNodeOffset);
         delete [] pEntry->entry_name;
     }
     else {
+        trace_log << "SeekEntryA ansi"<< endl;
         pEntry->entry_name = (char*)szEntryName;
         ret = this->SeekEntry(NULL, pEntry, bCreate, m_StartOffset + m_RootNodeOffset);
     }
@@ -40,12 +42,14 @@ PBLMI_PBL::SeekEntry( const wchar_t *szEntryName, PBL_ENTRYINFO * pEntry, BOOL b
     PBLMI_Result ret;
     pEntry->name_len = wcslen(szEntryName);
     if (!m_bUTF) {
+        trace_log << "SeekEntryW ansi"<< endl;
         pEntry->entry_name =  WideToMulti((const char*)szEntryName, (pEntry->name_len + 1) * 2, CP_ACP);
         pEntry->name_len = strlen((const char *)pEntry->entry_name);
         ret = this->SeekEntry(NULL, pEntry, bCreate, m_StartOffset + m_RootNodeOffset);
         delete [] pEntry->entry_name;
     }
     else {
+        trace_log << "SeekEntryW utf"<< endl;
         pEntry->entry_name = (char*)szEntryName;
         pEntry->name_len *= 2;
         ret = this->SeekEntry(NULL, pEntry, bCreate, m_StartOffset + m_RootNodeOffset);
@@ -56,10 +60,16 @@ PBLMI_PBL::SeekEntry( const wchar_t *szEntryName, PBL_ENTRYINFO * pEntry, BOOL b
 
 int PBLMI_PBL::StrCmp (const void * s1, const void * s2) 
 {
-	if (m_bUTF)
-		return wcsicmp((const wchar_t*)s1, (const wchar_t*)s2);
-	else
-		return stricmp((const char*)s1, (const char*)s2);
+    int ret;
+    if (m_bUTF) {
+		ret = wcsicmp((const wchar_t*)s1, (const wchar_t*)s2);
+        //trace_log << "StrCmpW '" << (const wchar_t*)s1 << "' '" << (const wchar_t*)s2<< "' ret=" << ret << endl;
+    }
+    else {
+		ret = stricmp((const char*)s1, (const char*)s2);
+        //trace_log << "StrCmpA '" << (const char*)s1 << "' '" << (const char*)s2<< "' ret=" << ret << endl;
+    }
+    return ret;
 }
 int PBLMI_PBL::StrLen (const void * s1) 
 {
@@ -75,16 +85,18 @@ PBLMI_PBL::SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCrea
 	// ��� ��������� �������� �� ��������� ��� ENT*
 	// � C++ ��� ������ bool, � �������� ���������� � pEntry
    
+    trace_log << "SeekEntry dwNode=" << dwNode<< endl;
 
     if (! dwNode)
         return PBLMI_NOTFOUND;
 
     //	PBLMI_CodePage l_TgtCp = m_iPbLMI->GetTargetCodePage();
-
+    trace_log << "pEntry->name_len=" << pEntry->name_len<< endl;
     int entry_len;
     entry_len = pEntry->name_len + m_EntFixedLen +  (m_bUTF ? 2 : 1);
     //if (debug) wprintf(L"SeekEntry '%s', elen=%i\n", pEntry->entry_name, entry_len);
 
+    trace_log << "entry_len=" << entry_len << " NodeSize - NodeEntOffset=" << (NodeSize - NodeEntOffset)<< endl;
     if (entry_len > NodeSize - NodeEntOffset)
         // such entries cannot be stored in PBL 
         return PBLMI_NOTFOUND;
@@ -106,6 +118,7 @@ PBLMI_PBL::SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCrea
         first_name.Read(m_Handle, li_nlen);
         if ( StrCmp((char*)first_name.buffer(),  pEntry->entry_name)> 0)
         {
+            trace_log << "check >0"<< endl;
             if (bCreate && !nod.left && nod.free_space < entry_len)
             {
                 PBLMI_Result ret;
@@ -133,6 +146,7 @@ PBLMI_PBL::SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCrea
         last_name.Read(m_Handle, li_nlen);
         if ( StrCmp((char*)last_name.buffer(),  pEntry->entry_name) < 0)
         {
+            trace_log << "check <0"<< endl;
             if (bCreate && !nod.right && nod.free_space < entry_len)
             {
                 PBLMI_Result ret;
@@ -170,6 +184,7 @@ PBLMI_PBL::SeekEntry(const char *szEntryName, PBL_ENTRYINFO * pEntry, BOOL bCrea
     PBL_ENT_W *pent_W = NULL;
     for (int offset = 0, ent_num = 0; ent_num < nod.ent_count ; ent_num ++)
     {
+        trace_log << "check entry " << ent_num << endl;
         //my ($name_len = unpack "S", substr($buf, $offset + $EntFixedLen - 2, 2);
         if (m_bUTF) {
             pent_W = (PBL_ENT_W *) (buf.buffer() + offset);
