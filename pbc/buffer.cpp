@@ -336,5 +336,10 @@ void buffer::insert( size_t where, const buffer& from, size_t begin, size_t end 
         from.m_data->buf.begin() + end);
 }
 
+std::string buffer::to_string()
+{
+    return buffer(*this).make_ansi();
+}
+
 
 } // namespace pbc

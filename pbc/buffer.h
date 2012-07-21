@@ -41,6 +41,7 @@ public:
     size_t use_count() const { return m_data ? m_data.use_count() : 0; }
     void make_writable();
     tstring to_tstring();
+    std::string to_string();
     void erase(size_t begin, size_t end);
     void insert(size_t where, const buffer& from, size_t begin, size_t end);
 private:

@@ -14,6 +14,7 @@
 #include <pbc/pblmi.h>
 #include <logger.h>
 #include <pbparser/dependency_parser.h>
+#include <pbparser/dw_parser.h>
 
 #include <string>
 #include <sstream>
@@ -469,7 +470,7 @@ BOOST_AUTO_TEST_CASE(test_pblmi_import)
 
 BOOST_AUTO_TEST_CASE(test_pblmi_bad_import_pb10)
 {
-    unlink("testapp/pb10/pbres_data_after.pbd");
+    _unlink("testapp/pb10/pbres_data_after.pbd");
     boost::filesystem::copy_file("testapp/pb10/pbres_data_before.pbd", "testapp/pb10/pbres_data_after.pbd");
     size_t size = (size_t)boost::filesystem::file_size("testapp/pb10/cancel1.bmp");
     ifstream in("testapp/pb10/cancel1.bmp", ios::binary);
@@ -557,7 +558,7 @@ BOOST_AUTO_TEST_CASE(test_pblmi_delete_entry)
 
 BOOST_AUTO_TEST_CASE(test_dependency_parser)
 {
-    logger::scoped_level l(5);
+    //logger::scoped_level l(5);
     pbc::pblmi::ptr p = pbc::pblmi::create();
     pbc::pblmi::entry e;
 
@@ -570,6 +571,53 @@ BOOST_AUTO_TEST_CASE(test_dependency_parser)
     }
     trace_log << "dep: " << dep << endl;
     BOOST_CHECK(dep == L"[commandbutton][statictext][window]");
+}
+
+BOOST_AUTO_TEST_CASE(test_dw_parser_ast)
+{
+    //logger::scoped_level l(5);
+    pbparser::dw_ast::node node("name_ansi");
+    BOOST_CHECK(node.name() == L"name_ansi");
+    node.name(L"name");
+    BOOST_CHECK(node.name() == L"name");
+    node.property(L"p2", L"p2v");
+    node.property(L"p1", L"p1v");
+    node.property(L"p3", L"p3v");
+    wstring list;
+    BOOST_FOREACH(wstring a, node.properties()) {
+        list += L"[" + a + L"/" + node.property(a)+ L"]";
+    }
+    trace_log << "props: " << list << endl;
+    BOOST_CHECK(list == L"[p1/p1v][p2/p2v][p3/p3v]");
+}
+
+BOOST_AUTO_TEST_CASE(test_dw_parser_lexer)
+{
+    //logger::scoped_level l(5);
+    pbparser::dw_parser p;
+    pbparser::dw_ast::node::ptr dw = p.parse(pbc::buffer(
+        "Release 11.5;\n"
+        "ddd()\n"
+        "ddd(x=123 y$=(a=b(1) c='sss'))\n"
+        "\n"
+        "\n"
+        "\n"
+        ));
+    BOOST_CHECK(dw->property(L"release") == L"11.5");
+    BOOST_CHECK(dw->nested_nodes().size() == 2);
+
+
+}
+
+BOOST_AUTO_TEST_CASE(test_dw_parser_samples)
+{
+    pbc::pblmi::entry e = pbc::pblmi::create()->export_entry(string("testapp/pb9/main.pbl"), "d_1.srd");
+    logger::scoped_level l(5);
+    pbparser::dw_parser p;
+    pbparser::dw_ast::node::ptr dw = p.parse(e.data);
+    BOOST_CHECK(dw->property(L"release") == L"9");
+    BOOST_CHECK(dw->nested_nodes().size() == 11);
+    BOOST_CHECK(dw->nested_node(L"table")->nested_nodes().front()->property(L"type") == L"char(10)");
 }
 
 //////////////////////////////////////
